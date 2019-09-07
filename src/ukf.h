@@ -9,7 +9,7 @@ class UKF {
   /**
    * Constructor
    */
-  UKF();
+  UKF();  
 
   /**
    * Destructor
@@ -41,6 +41,37 @@ class UKF {
    */
   void UpdateRadar(MeasurementPackage meas_package);
 
+  /**
+   * Updates the state with either lidar or radar measurement
+   * @param z The measurement at k+1
+   * @param z_pred The predictionof measurement at k+1
+   * @param S The measurement covariance matrix
+   * @param Zsig The matrix for sigma points in measurement space
+   */
+  void UpdateState(const Eigen::VectorXd &z, const Eigen::VectorXd &z_pred, const Eigen::MatrixXd &S, const Eigen::MatrixXd &Zsig);
+
+  /**
+   * Calculate augmented sigma points: Xsig_agu_
+   */
+  void AugmentSigmaPoints();
+
+
+  /**
+   * Predict the sigma points: Xsig_pred_
+   * @param delta_t Time between k and k+1 in s
+   */
+  void PredictSigmaPoints(double delta_t);
+
+  /**
+   * Predict Mean and Covariance of the predicted state: x_ and P_
+   */
+  void PredictMeanAndCovariance();
+
+    /**
+   * Initialize the state, covariance matrix and timestamp using a radar measurement
+   * @param meas_package The first measurement
+   */
+  void Initialization(MeasurementPackage meas_package);
 
   // initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;
@@ -92,6 +123,18 @@ class UKF {
 
   // Augmented state dimension
   int n_aug_;
+
+  // Number of sigma points
+  int n_aug_sigma_;
+
+  // augmented sigma points matrix
+  Eigen::MatrixXd Xsig_aug_;
+
+  // the current NIS for radar
+  double NIS_radar_;
+
+  // the current NIS for laser
+  double NIS_laser_;
 
   // Sigma point spreading parameter
   double lambda_;

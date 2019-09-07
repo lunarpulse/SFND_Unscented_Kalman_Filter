@@ -8,6 +8,7 @@ using Eigen::VectorXd;
  * Initializes Unscented Kalman filter
  */
 UKF::UKF() {
+
   // if this is false, laser measurements will be ignored (except during init)
   use_laser_ = true;
 
@@ -25,7 +26,7 @@ UKF::UKF() {
 
   // Process noise standard deviation yaw acceleration in rad/s^2
   std_yawdd_ = 30;
-  
+
   /**
    * DO NOT MODIFY measurement noise values below.
    * These are provided by the sensor manufacturer.
@@ -50,10 +51,48 @@ UKF::UKF() {
    * End DO NOT MODIFY section for measurement noise values 
    */
   
-  /**
-   * TODO: Complete the initialization. See ukf.h for other member properties.
-   * Hint: one or more values initialized above might be wildly off...
-   */
+  // not yet init 
+  is_initialized_ = false;
+
+  // time zero 
+  time_us_ = 0;
+
+  // State dimension: [pos1 pos2 vel_abs yaw_angle yaw_rate]
+  n_x_ = 5;
+
+  // Augmented state dimension
+  n_aug_ = 7;
+
+  // Number of sigma points
+  n_aug_sigma_ = 2 * n_aug_ + 1;
+
+  // Sigma point spreading parameter
+  lambda_ = 3 - n_aug_;
+
+  // the current NIS for radar
+  NIS_radar_ = 0.;
+
+  // the current NIS for laser
+  NIS_laser_ = 0.;
+
+  // Weights of sigma points
+  weights_ = VectorXd(n_aug_sigma_);
+  double t = lambda_ + n_aug_;
+  weights_(0) = lambda_ / t;
+  weights_.tail(n_aug_sigma_-1).fill(0.5/t);
+
+  // state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate]
+  x_ = VectorXd(n_x_);
+  x_.fill(0);
+
+  // state covariance matrix
+  P_ = MatrixXd(n_x_, n_x_);
+
+  // predicted sigma points matrix
+  Xsig_pred_ = MatrixXd(n_x_, n_aug_sigma_);
+
+  // agumented sigma points matrix
+  Xsig_aug_ = MatrixXd(n_aug_, n_aug_sigma_);
 }
 
 UKF::~UKF() {}
