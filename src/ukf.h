@@ -42,6 +42,16 @@ class UKF {
   void UpdateRadar(MeasurementPackage meas_package);
 
   /**
+   * Predict either lidar or radar measurement with given Sigma predictions
+   * @param n_z The measurement dimension
+   * @param Zsig The matrix for sigma points in measurement space
+   * @param z_pred The predicted measurement mean
+   * @param S The measurement covariance matrix
+   * @param R The measurement noise covariance matrix
+   */
+  void PredictMeasurement(int n_z, const Eigen::MatrixXd &Zsig, Eigen::VectorXd &z_pred, Eigen::MatrixXd &S, Eigen::MatrixXd &R) ;
+
+  /**
    * Updates the state with either lidar or radar measurement
    * @param z The measurement at k+1
    * @param z_pred The predictionof measurement at k+1
@@ -51,23 +61,6 @@ class UKF {
   void UpdateState(const Eigen::VectorXd &z, const Eigen::VectorXd &z_pred, const Eigen::MatrixXd &S, const Eigen::MatrixXd &Zsig);
 
   /**
-   * Calculate augmented sigma points: Xsig_agu_
-   */
-  void AugmentSigmaPoints();
-
-
-  /**
-   * Predict the sigma points: Xsig_pred_
-   * @param delta_t Time between k and k+1 in s
-   */
-  void PredictSigmaPoints(double delta_t);
-
-  /**
-   * Predict Mean and Covariance of the predicted state: x_ and P_
-   */
-  void PredictMeanAndCovariance();
-
-    /**
    * Initialize the state, covariance matrix and timestamp using a radar measurement
    * @param meas_package The first measurement
    */
