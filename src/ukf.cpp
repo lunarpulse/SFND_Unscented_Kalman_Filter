@@ -2,7 +2,7 @@
 #include "Eigen/Dense"
 
 #include <iostream>
-#define DEBUG 1 // toggle debug
+#define DEBUG 0 // toggle debug
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -133,11 +133,11 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     /**
      * Initialize the covariance matrix
      */
-    P_ << 0.45, 0, 0, 0, 0,
-          0, 0.45, 0, 0, 0,
-          0, 0, 0.45, 0, 0,
-          0, 0, 0, 0.45, 0,
-          0, 0, 0, 0, 0.45;
+    P_ << 0.15, 0, 0, 0, 0,
+          0, 0.15, 0, 0, 0,
+          0, 0, 0.25, 0, 0,
+          0, 0, 0, 0.25, 0,
+          0, 0, 0, 0, 0.25;
 
     // set Initialize flag to true
     is_initialized_ = true;
