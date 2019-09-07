@@ -7,11 +7,16 @@ In this project you will implement an Unscented Kalman Filter to estimate the st
 
 The main program can be built and ran by doing the following from the project top directory.
 
-1. mkdir build
-2. cd build
-3. cmake ..
-4. make
-5. ./ukf_highway
+## Instruction
+
+```bash
+mkdir build
+cd build/
+cmake .. -DRELEASE
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make ukf_highway
+./ukf_highway
+```
 
 Note that the programs that need to be written to accomplish the project are src/ukf.cpp, and src/ukf.h
 
