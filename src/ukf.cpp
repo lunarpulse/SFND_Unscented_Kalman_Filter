@@ -1,6 +1,9 @@
 #include "ukf.h"
 #include "Eigen/Dense"
 
+#include <iostream>
+#define DEBUG 1 // toggle debug
+
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
@@ -24,10 +27,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 30;
+  std_a_ = 0.75;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 30;
+  std_yawdd_ = 0.65;
 
   /**
    * DO NOT MODIFY measurement noise values below.
@@ -63,7 +66,7 @@ UKF::UKF() {
   n_x_ = 5;
 
   // Augmented state dimension
-  n_aug_ = 7;
+  n_aug_ = n_x_ + 2;
 
   // Number of sigma points
   n_aug_sigma_ = 2 * n_aug_ + 1;
@@ -78,23 +81,23 @@ UKF::UKF() {
   NIS_laser_ = 0.;
 
   // Weights of sigma points
-  weights_ = VectorXd(n_aug_sigma_);
+  weights_ = VectorXd::Zero(n_aug_sigma_);
   double t = lambda_ + n_aug_;
   weights_(0) = lambda_ / t;
   weights_.tail(n_aug_sigma_-1).fill(0.5/t);
 
   // state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate]
-  x_ = VectorXd(n_x_);
+  x_ = VectorXd::Zero(n_x_);
   x_.fill(0);
 
   // state covariance matrix
-  P_ = MatrixXd(n_x_, n_x_);
+  P_ = MatrixXd::Zero(n_x_, n_x_);
 
   // predicted sigma points matrix
-  Xsig_pred_ = MatrixXd(n_x_, n_aug_sigma_);
+  Xsig_pred_ = MatrixXd::Zero(n_x_, n_aug_sigma_);
 
   // agumented sigma points matrix
-  Xsig_aug_ = MatrixXd(n_aug_, n_aug_sigma_);
+  Xsig_aug_ = MatrixXd::Zero(n_aug_, n_aug_sigma_);
 }
 
 UKF::~UKF() {}
@@ -130,16 +133,15 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     /**
      * Initialize the covariance matrix
      */
-    P_ << 1, 0, 0, 0, 0,
-          0, 1, 0, 0, 0,
-          0, 0, 1, 0, 0,
-          0, 0, 0, 1, 0,
-          0, 0, 0, 0, 1;
+    P_ << 0.45, 0, 0, 0, 0,
+          0, 0.45, 0, 0, 0,
+          0, 0, 0.45, 0, 0,
+          0, 0, 0, 0.45, 0,
+          0, 0, 0, 0, 0.45;
 
     // set Initialize flag to true
     is_initialized_ = true;
   }
-
 
   //Prediction
   double delta_t = (meas_package.timestamp_ - time_us_) / 1000000.0;  // convert unit from us to s.
@@ -166,8 +168,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   *  vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
 void UKF::Prediction(double delta_t) {
-
-
   // calculate augmented sigma points: Xsig_agu_
     //create augmented mean vector
   VectorXd x_aug_ = VectorXd(n_aug_);
@@ -196,12 +196,12 @@ void UKF::Prediction(double delta_t) {
   for (int i = 0; i< 2*n_aug_+1; i++)
   {
     //extract values for better readability
-    double p_x = Xsig_aug_(0,i);
-    double p_y = Xsig_aug_(1,i);
-    double v = Xsig_aug_(2,i);
-    double yaw = Xsig_aug_(3,i);
-    double yawd = Xsig_aug_(4,i);
-    double nu_a = Xsig_aug_(5,i);
+    double p_x      = Xsig_aug_(0,i);
+    double p_y      = Xsig_aug_(1,i);
+    double v        = Xsig_aug_(2,i);
+    double yaw      = Xsig_aug_(3,i);
+    double yawd     = Xsig_aug_(4,i);
+    double nu_a     = Xsig_aug_(5,i);
     double nu_yawdd = Xsig_aug_(6,i);
 
     //predicted state values
@@ -209,25 +209,25 @@ void UKF::Prediction(double delta_t) {
 
     //avoid division by zero
     if (fabs(yawd) > 0.001) {
-      px_p = p_x + v/yawd * ( sin (yaw + yawd*delta_t) - sin(yaw));
-      py_p = p_y + v/yawd * ( cos(yaw) - cos(yaw+yawd*delta_t) );
+      px_p = p_x + v/yawd * ( sin(yaw + yawd * delta_t) - sin(yaw));
+      py_p = p_y + v/yawd * ( cos(yaw) - cos(yaw + yawd * delta_t));
     }
     else {
-      px_p = p_x + v*delta_t*cos(yaw);
-      py_p = p_y + v*delta_t*sin(yaw);
+      px_p = p_x + v * delta_t * cos(yaw);
+      py_p = p_y + v * delta_t * sin(yaw);
     }
 
     double v_p = v;
-    double yaw_p = yaw + yawd*delta_t;
+    double yaw_p = yaw + yawd * delta_t;
     double yawd_p = yawd;
 
     //add noise
-    px_p = px_p + 0.5*nu_a*delta_t*delta_t * cos(yaw);
-    py_p = py_p + 0.5*nu_a*delta_t*delta_t * sin(yaw);
+    px_p = px_p + 0.5 * nu_a * delta_t * delta_t * cos(yaw);
+    py_p = py_p + 0.5 * nu_a * delta_t * delta_t * sin(yaw);
     v_p = v_p + nu_a*delta_t;
 
-    yaw_p = yaw_p + 0.5*nu_yawdd*delta_t*delta_t;
-    yawd_p = yawd_p + nu_yawdd*delta_t;
+    yaw_p = yaw_p + 0.5 * nu_yawdd * delta_t * delta_t;
+    yawd_p = yawd_p + nu_yawdd * delta_t;
 
     //write predicted sigma point into right column
     Xsig_pred_(0,i) = px_p;
@@ -272,7 +272,6 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   //measurement covariance matrix S
   MatrixXd S = MatrixXd(n_z, n_z);
 
-
   //transform sigma points into radar measurement space
   for (int i = 0; i < n_aug_sigma_; i++) {
 
@@ -299,7 +298,9 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   // Calculate NIS
   NIS_laser_ = (z - z_pred).transpose() * S.inverse() * (z - z_pred);
-
+#if DEBUG
+  std::cout<<"NIS_laser_: "<< NIS_radar_<<std::endl;
+#endif
 }
 
 void UKF::UpdateRadar(MeasurementPackage meas_package) {
@@ -349,10 +350,11 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   VectorXd z = meas_package.raw_measurements_;
   UpdateState(z, z_pred, S, Zsig);
 
-
   // Calculate NIS
   NIS_radar_ = (z - z_pred).transpose() * S.inverse() * (z - z_pred);
-
+#if DEBUG
+  std::cout<<"NIS_radar_: "<< NIS_radar_<<std::endl;
+#endif
 }
 
 /**
